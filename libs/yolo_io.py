@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-import codecs
+import sys
 import os
-
+from xml.etree import ElementTree
+from xml.etree.ElementTree import Element, SubElement
+from lxml import etree
+import codecs
 from libs.constants import DEFAULT_ENCODING
 
 TXT_EXT = '.txt'
@@ -18,6 +21,10 @@ class YOLOWriter:
         self.box_list = []
         self.local_img_path = local_img_path
         self.verified = False
+        print('\n')
+        print('folder_name', folder_name)
+        print('local_img_path', local_img_path)
+        
 
     def add_bnd_box(self, x_min, y_min, x_max, y_max, name, difficult):
         bnd_box = {'xmin': x_min, 'ymin': y_min, 'xmax': x_max, 'ymax': y_max}
@@ -36,18 +43,27 @@ class YOLOWriter:
 
         w = float((x_max - x_min)) / self.img_size[1]
         h = float((y_max - y_min)) / self.img_size[0]
-
         # PR387
-        box_name = box['name']
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######
+        box_name = str(box['name'])        
+        path = os.path.dirname(self.local_img_path)+ '\classes.txt'
+        with open(path) as f:
+            for line in f.readlines():
+                line = str(line.split('\n')[0])
+                class_list.append(line)        
         if box_name not in class_list:
             class_list.append(box_name)
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######
 
         class_index = class_list.index(box_name)
-
+        print('class_index', class_index)
         return class_index, x_center, y_center, w, h
 
     def save(self, class_list=[], target_file=None):
-
         out_file = None  # Update yolo .txt
         out_class_file = None   # Update class list .txt
 
@@ -56,27 +72,38 @@ class YOLOWriter:
             self.filename + TXT_EXT, 'w', encoding=ENCODE_METHOD)
             classes_file = os.path.join(os.path.dirname(os.path.abspath(self.filename)), "classes.txt")
             out_class_file = open(classes_file, 'w')
+            for c in class_list:
+                out_class_file.write(c+'\n')
+            out_class_file.close()
 
         else:
             out_file = codecs.open(target_file, 'w', encoding=ENCODE_METHOD)
-            classes_file = os.path.join(os.path.dirname(os.path.abspath(target_file)), "classes.txt")
-            out_class_file = open(classes_file, 'w')
-
 
         for box in self.box_list:
             class_index, x_center, y_center, w, h = self.bnd_box_to_yolo_line(box, class_list)
             # print (classIndex, x_center, y_center, w, h)
             out_file.write("%d %.6f %.6f %.6f %.6f\n" % (class_index, x_center, y_center, w, h))
-
-        # print (classList)
-        # print (out_class_file)
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######
+        CLS = []
+        path = os.path.dirname(target_file)+ '\classes.txt'
+        with open(path) as f:
+            for line in f.readlines():
+                line = str(line.split('\n')[0])
+                CLS.append(line)
         for c in class_list:
-            out_class_file.write(c+'\n')
-
-        out_class_file.close()
+            if c not in CLS:
+                CLS.append(c)
+                with open(path, 'w') as f:
+                    for CLS_NAME in CLS:
+                        f.write(str(CLS_NAME) + '\n')
+                with open(path) as f:
+                    print(f.read())             
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######
+        ######### "WOFGA" FIX labeling issue when restarting labeling #######                 
         out_file.close()
-
-
 
 class YoloReader:
 
@@ -97,7 +124,7 @@ class YoloReader:
         classes_file = open(self.class_list_path, 'r')
         self.classes = classes_file.read().strip('\n').split('\n')
 
-        # print (self.classes)
+        print('self.classes', self.classes)
 
         img_size = [image.height(), image.width(),
                     1 if image.isGrayscale() else 3]
