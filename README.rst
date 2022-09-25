@@ -1,3 +1,7 @@
+This is forked to fix some issue on my own such as resume labeling crash issue
+
+
+
 .. image:: /readme/images/labelimg.png
         :target: https://github.com/heartexlabs/label-studio
 
